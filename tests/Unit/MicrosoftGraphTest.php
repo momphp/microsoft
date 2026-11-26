@@ -49,6 +49,24 @@ it('reads a message with its headers and a plain-text body', function (): void {
         && str_contains($request['$select'], 'uniqueBody'));
 });
 
+it('reads a message as the sender laid it out, and has none for one written as plain text', function (array $body, ?string $html): void {
+    Http::fake(['graph.microsoft.com/v1.0/me/messages/graph-1*' => Http::response(['id' => 'graph-1', 'body' => $body])]);
+
+    expect(MicrosoftGraph::forConnection(new FakeConnection)->messageHtml('graph-1'))->toBe($html);
+
+    Http::assertSent(fn (Request $request): bool => $request->hasHeader('Prefer', 'IdType="ImmutableId"') && 'id,body' === $request['$select']);
+})->with([
+    'laid out' => [['contentType' => 'html', 'content' => '<html><body><p>The printer is <b>offline</b>.</p></body></html>'], '<html><body><p>The printer is <b>offline</b>.</p></body></html>'],
+    'plain text' => [['contentType' => 'text', 'content' => 'The printer is offline.'], null],
+    'empty' => [['contentType' => 'html', 'content' => "  \r\n"], null],
+]);
+
+it('has no laid-out message when it has gone from the mailbox', function (): void {
+    Http::fake(['graph.microsoft.com/v1.0/me/messages/graph-1*' => Http::response(['error' => ['code' => 'ErrorItemNotFound']], 404)]);
+
+    expect(MicrosoftGraph::forConnection(new FakeConnection)->messageHtml('graph-1'))->toBeNull();
+});
+
 it('has no message when it has gone from the mailbox', function (): void {
     Http::fake(['graph.microsoft.com/v1.0/me/messages/graph-1*' => Http::response(['error' => ['code' => 'ErrorItemNotFound']], 404)]);
 

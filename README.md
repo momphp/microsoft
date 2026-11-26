@@ -11,7 +11,7 @@ $client = $type->mailClient($connection);                        // the account'
 $client = $type->mailClient($connection, 'support@acme.com');    // a shared mailbox it can open
 
 $client->inboxMessagesSince($since, 50);    // ids and arrival times, oldest first
-$client->message($id);                      // an InboundMail, or null
+$client->message($id);                      // an InboundMail with its text and its HTML, or null
 $client->send($outgoingMail);               // a SentMail
 ```
 

@@ -61,6 +61,17 @@ it('makes do with a message that has almost nothing in it', function (): void {
         ->and($mail->hasAttachments)->toBeFalse();
 });
 
+it('reads a message with its text and, apart from it, as the sender laid it out', function (): void {
+    Http::fake(fn (Request $request) => Http::response('id,body' === $request['$select']
+        ? ['id' => 'graph-1', 'body' => ['contentType' => 'html', 'content' => '<p>The printer on level 2 is <b>offline</b>.</p>']]
+        : GraphMessage::make()));
+
+    $mail = microsoftMailClient()->message('graph-1');
+
+    expect($mail?->bodyText)->toBe('The printer on level 2 is offline.')
+        ->and($mail?->bodyHtml)->toBe('<p>The printer on level 2 is <b>offline</b>.</p>');
+});
+
 it('has no message for a draft or one that has gone', function (): void {
     Http::fake([
         'graph.microsoft.com/v1.0/me/messages/graph-draft*' => Http::response(GraphMessage::make(['id' => 'graph-draft', 'isDraft' => true])),

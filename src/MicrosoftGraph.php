@@ -114,6 +114,26 @@ final readonly class MicrosoftGraph
     }
 
     /**
+     * A message's body as the sender laid it out. Null when the message was
+     * written as plain text, or is no longer in the mailbox.
+     *
+     * @throws CouldNotReachConnector
+     */
+    public function messageHtml(string $id): ?string
+    {
+        $response = $this->get($this->path('messages/' . rawurlencode($id)), ['$select' => 'id,body']);
+
+        if ($response->notFound()) {
+            return null;
+        }
+
+        $body = self::json($response)['body'] ?? null;
+        $content = is_array($body) && 'html' === mb_strtolower((string) ($body['contentType'] ?? '')) ? ($body['content'] ?? null) : null;
+
+        return is_string($content) && '' !== mb_trim($content) ? $content : null;
+    }
+
+    /**
      * What is attached to a message: each attachment's id, name, type and
      * size in bytes, whether it is a file (not a linked or embedded item) and
      * whether it is an image shown inside the message. Never the contents.

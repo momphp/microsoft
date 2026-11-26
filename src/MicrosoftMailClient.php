@@ -27,10 +27,11 @@ final readonly class MicrosoftMailClient implements MailClient
      * A message as Microsoft Graph returns it, asked for with its headers
      * and with its body as plain text. Graph tells what the sender wrote
      * apart from the quoted history itself, in the message's unique body.
+     * Its body as the sender laid it out is asked for apart from that.
      *
      * @param  array<string, mixed>  $message
      */
-    public static function toInboundMail(array $message): InboundMail
+    public static function toInboundMail(array $message, ?string $bodyHtml = null): InboundMail
     {
         $headers = self::headers($message);
         $externalId = Arr::get($message, 'id');
@@ -49,6 +50,7 @@ final readonly class MicrosoftMailClient implements MailClient
             replyText: self::text(Arr::get($message, 'uniqueBody.content')) ?? $bodyText,
             receivedAt: self::date(Arr::get($message, 'receivedDateTime')),
             hasAttachments: true === ($message['hasAttachments'] ?? false),
+            bodyHtml: $bodyHtml,
         );
     }
 
@@ -70,7 +72,7 @@ final readonly class MicrosoftMailClient implements MailClient
             return null;
         }
 
-        return self::toInboundMail($message);
+        return self::toInboundMail($message, $this->graph->messageHtml($id));
     }
 
     public function attachments(string $messageId): array
